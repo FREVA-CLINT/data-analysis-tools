@@ -135,7 +135,6 @@ help = "Specify a numerical range in the format [start, end, increment]."
 - Dependencies: List all required dependencies explicitly in the tool.run.dependencies or tool.build.dependencies sections.
 - Parameters: Provide descriptive help messages for all parameters to guide users.
 - Reproducibility: Document any additional setup steps (e.g., build.sh) and ensure they are included in the tool's environment.
--
 
 ## Additional Resources
 
