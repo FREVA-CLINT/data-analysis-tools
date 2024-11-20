@@ -28,18 +28,18 @@ steps to add your tool:
 
 1. Navigate to the repository page and click the **Fork** button.
 1. Clone your fork to your local machine:
-```console
-git clone https://github.com/your-username/freva-tools.git
-cd freva-tools
-```
+    ```console
+    git clone https://github.com/your-username/freva-tools.git
+    cd freva-tools
+    ```
 1. Create a new branch for your tool:
-```console
-git checkout -b add-your-tool-name
-```
+    ```console
+    git checkout -b add-your-tool-name
+    ```
 1. Create a new folder in the `tools/` directory with a descriptive name for your tool:
-```console
-mkdir tools/your-tool-name
-```
+    ```console
+    mkdir tools/your-tool-name
+    ```
 1. Add your tool files to this folder:
     - `tool.toml`: Defines your tool's metadata, parameters, and execution logic.
     - `build.sh`: (if applicable): Handles build or installation steps.
@@ -49,15 +49,15 @@ mkdir tools/your-tool-name
   consider using a license that encourages proper attribution or citation (e.g., BSD 3-Clause License).
 
 1. Add and commit your changes:
-```console
-git add tools/your-tool-name
-git commit -m "Add your-tool-name"
-```
+    ```console
+    git add tools/your-tool-name
+    git commit -m "Add your-tool-name"
+    ```
 
 1. Push your branch to your fork:
-```console
-git push origin add-your-tool-name
-```
+    ```console
+    git push origin add-your-tool-name
+    ```
 1. Navigate to the original repository and open a pull request.
 
 ## Writing the `tool.toml` File
