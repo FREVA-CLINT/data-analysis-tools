@@ -28,7 +28,7 @@ command = "Rscript example.R"  # Command to execute the tool.
 # The specified command will receive a single JSON input containing all input
 # parameters. Ensure your script processes this JSON file. Refer to the
 # example script for guidance.
-dependencies = ["r-base", "ffmpeg"]  # Conda-forge packages needed.
+dependencies = ["r-base", "ffmpeg<7"]  # Conda-forge packages needed.
 
 [tool.input_parameters.parameter_1]
 # Parameter 1: Example of a string parameter with a default value.

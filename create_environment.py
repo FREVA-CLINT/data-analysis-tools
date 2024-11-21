@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import platform
+import re
 import shutil
 import subprocess
 import sys
@@ -14,6 +15,15 @@ from tempfile import TemporaryDirectory
 
 
 def pip_install(package):
+    """
+    Install a Python package using pip.
+
+    Parameters
+    ----------
+    package : str
+        The name of the Python package to install.
+    """
+
     subprocess.check_call(
         [os.path.join(sys.exec_prefix, "bin", "python"), "-m", "ensurepip"]
     )
@@ -44,6 +54,14 @@ except ImportError:
         import toml
 
 
+try:
+    from packaging.specifiers import SpecifierSet
+    from packaging.version import Version
+except ImportError:
+    pip_install("packaging")
+    from packaging.specifiers import SpecifierSet
+    from packaging.version import Version
+
 logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s", level=logging.ERROR
 )
@@ -51,13 +69,15 @@ logging.basicConfig(
 logger = logging.getLogger("create-conda-env")
 
 
-def get_download_url() -> str:
+def get_download_url():
     """
     Determine the appropriate Micromamba download URL based on the current system's
     architecture and operating system.
 
-    Returns:
-        str: The Micromamba download URL.
+    Returns
+    -------
+    str:
+        The Micromamba download URL.
     """
     system = platform.system().lower()
     arch = platform.machine().lower()
@@ -77,16 +97,19 @@ def get_download_url() -> str:
         if arch == "arm64":
             return "https://micro.mamba.pm/api/micromamba/osx-arm64/latest"
 
-    raise SystemExit(f"Unsupported system or architecture: {system}-{arch}")
+    raise ValueError(f"Unsupported system or architecture: {system}-{arch}")
 
 
-def download_with_progress(url, output_path) -> None:
+def download_with_progress(url, output_path):
     """
     Download a file from a URL with a visual progress bar.
 
-    Args:
-        url (str): The URL to download from.
-        output_path (str): The path where the downloaded file will be saved.
+    Parameters
+    ----------
+    url (str):
+        The URL to download from.
+    output_path (str):
+        The path where the downloaded file will be saved.
     """
     logger.debug("Downloading micromamba")
     with urllib.request.urlopen(url) as response:
@@ -107,13 +130,16 @@ def download_with_progress(url, output_path) -> None:
     print("\nDownload complete.")
 
 
-def extract_micromamba(tar_path: str, extract_dir: str) -> None:
+def extract_micromamba(tar_path, extract_dir):
     """
     Extract the Micromamba binary from the tar file.
 
-    Args:
-        tar_path (str): The path to the tar file.
-        extract_dir (str): The directory to extract to.
+    Parameters
+    -----------
+    tar_path (str):
+        The path to the tar file.
+    extract_dir (str):
+        The directory to extract to.
     """
     logger.debug("Extracting micromamba")
     with tarfile.open(tar_path, "r") as tar:
@@ -151,9 +177,7 @@ def parse_args(argv=None):
     parser.add_argument(
         "-p",
         "--prefix",
-        help=(
-            "The install prefix where the environment should" " be installed"
-        ),
+        help=("The install prefix where the environment should" " be installed"),
         type=Path,
         default=os.getenv("INSTALL_PREFIX", "~/.tools/"),
     )
@@ -164,10 +188,23 @@ def parse_args(argv=None):
 
 
 def create_environment(mamba_dir, tool_dir, env_dir, tool_config):
-    """Create the environments."""
+    """Create the the tool conda environments.
+
+    Parameters
+    ----------
+    mamba_dir : Path
+        Path to the Micromamba binary directory.
+    tool_dir : Path
+        Path to the tool definition directory.
+    env_dir : Path
+        Path where the Conda environment will be created.
+    tool_config : dict
+        The parsed configuration of the tool from the TOML file.
+    """
+
     requ_file = tool_dir.expanduser().absolute() / "requirements.txt"
     pip_cmd = []
-    env_file = tool_dir / "environment.yml"
+    env_file = tool_dir / "environment.lock"
     if env_dir.is_dir():
         shutil.rmtree(env_dir)
     if requ_file.is_file():
@@ -226,7 +263,17 @@ def create_environment(mamba_dir, tool_dir, env_dir, tool_config):
 
 
 def set_version(conda_dir, version, new=True):
-    """Set the version in the version file."""
+    """Set the version in the version file.
+
+    Parameters
+    ----------
+    conda_dir: Path
+        The parent path of all conda environments for this tool
+    version: str
+        The of the tool
+    new:
+        Wheather or not an entire conda environment was created.
+    """
     version_file = conda_dir.parent / ".versions.json"
     if version_file.is_file():
         content = json.loads(version_file.read_text())
@@ -245,15 +292,16 @@ def copy_all(input_path, target_path):
     """
     Recursively copy all files and subdirectories from input_dir/* to target_dir/.
 
-    Args:
-        input_dir (str): Path to the source directory.
-        target_dir (str): Path to the destination directory.
+    Parameters
+    ----------
+    input_dir (str):
+        Path to the source directory.
+    target_dir (str):
+        Path to the destination directory.
     """
 
     if not input_path.exists():
-        raise FileNotFoundError(
-            f"Input directory '{input_path}' does not exist."
-        )
+        raise FileNotFoundError(f"Input directory '{input_path}' does not exist.")
     shutil.rmtree(target_path)
     # Ensure the target directory exists
     target_path.mkdir(parents=True, exist_ok=True)
@@ -268,19 +316,25 @@ def copy_all(input_path, target_path):
         else:
             # Copy the file to the corresponding target path
             shutil.copy(item, target_item)
-            logger.debug(f"Copied: {item} -> {target_item}")
+            logger.debug("Copied: %s -> %s", item, target_item)
 
 
 def create_environment_file(path, env, env_file):
     """Create an environment file of a conda environment."""
     out = subprocess.check_output(
-        ["mamba", "env", "export", "-p", path], env=env
+        ["mamba", "env", "export", "-p", str(path)],
+        env=env,
     )
     conda_env = yaml.safe_load(out.decode())
-    conda_env.pop("name", "")
-    conda_env.pop("prefix", "")
     with (env_file).open("w", encoding="utf-8") as stream:
-        stream.write(yaml.safe_dump(conda_env))
+        stream.write(
+            yaml.safe_dump(
+                {
+                    "dependencies": conda_env["dependencies"],
+                    "channels": ["conda-forge"],
+                }
+            )
+        )
 
 
 def build(env_dir, build_dir, env_file, build_config):
@@ -341,48 +395,156 @@ def build(env_dir, build_dir, env_file, build_config):
 
 
 def load_config(input_dir):
-    """Load the tool config."""
+    """
+    Load the tool configuration from a TOML or pyproject.toml file.
+
+    Parameters
+    ----------
+    input_dir : Path
+        Path to the directory containing the configuration file.
+
+    Returns
+    -------
+    dict
+        The parsed configuration data.
+
+    Raises
+    ------
+    ValueError
+        f no valid configuration file is found in the directory.
+    """
+
     for file in ("tool.toml", "pyproject.toml"):
         if (input_dir / file).is_file():
             return toml.loads((input_dir / file).read_text())
-    raise SystemExit(
+    raise ValueError(
         "Your tool must be defined in either a tool.toml or pyproject.toml file"
     )
 
 
-def main():
-    """Create the conda environment."""
-    args = parse_args()
+def parse_dependency(dependency: str):
+    """
+    Parse a dependency string into a package name and version constraint.
+
+    Parameters
+    ----------
+    dependency : str
+        The dependency string (e.g., "foo>3").
+
+    Returns
+    -------
+    tuple
+        A tuple of (package_name, version_constraint).
+        If no version constraint is provided, returns (package_name, "").
+    """
+    match = re.match(r"^([a-zA-Z0-9_\-]+)([<>=!~^].*)?$", dependency)
+    if not match:
+        raise ValueError(f"Invalid dependency format: {dependency}")
+    package_name, version_constraint = match.groups()
+    return package_name, version_constraint or ""
+
+
+def check_for_environment_creation(source_dir, dependencies):
+    """Check the dependencies and decide about a (re)creation of the environment.
+
+    Parameters
+    ----------
+    source_dir: Path
+        The source-code directory
+    dependencies: List[str]
+        defined dependencies of the tool
+
+    Returns
+    -------
+    bool: whether or not a complete new environment needs to be created.
+    """
+
+    env_file = source_dir / "environment.lock"
+    if not env_file.is_file():
+        return True
+    deps_lock = {}
+
+    try:
+        deps_lock = yaml.safe_load(env_file.read_text())
+    except Exception:
+        logger.warning("Could not read environment.lock file")
+        env_file.unlink()
+        return True
+    dependency_specs = {}
+    for dep in deps_lock["dependencies"]:
+        dep_vers = dep.split("=")
+        dependency_specs[dep_vers[0]] = dep_vers[1:]
+    recreate = False
+    for p in dependencies:
+        package_name, constraint = parse_dependency(p)
+        if package_name not in dependency_specs:
+            # We do have a requested package that is not installed yet.
+            deps_lock["dependencies"].append(p)
+            recreate = True
+        else:
+
+            installed_version = Version(dependency_specs[package_name][0])
+            if constraint and installed_version not in SpecifierSet(constraint):
+                recreate = True
+                # We need another version
+                deps_lock["dependencies"] = [
+                    d
+                    for d in deps_lock["dependencies"]
+                    if not d.startswith(package_name)
+                ]
+                deps_lock["dependencies"].append(p)
+    if recreate:
+        deps_lock["dependencies"].sort()
+        env_file.write_text(yaml.safe_dump(deps_lock))
+    return recreate
+
+
+def main(input_dir, prefix_dir, force=False):
+    """
+    Main function to create the Conda environment for a tool.
+
+    Parameters
+    ----------
+    input_dir : Path
+        Path to the tool definition directory.
+    prefix_dir : Path
+        Installation prefix for the Conda environment.
+    force : bool, optional
+        Whether to force recreation of the environment, by default False.
+    """
+
     mamba_url = get_download_url()
-    input_dir = args.input_dir.expanduser().absolute()
+    input_dir = input_dir.expanduser().absolute()
     config = load_config(input_dir)
     version = config["tool"].get(
         "version", config.get("project", {}).get("version")
     )
     if not version:
-        raise SystemExit("You need to define a version.")
+        raise ValueError("You need to define a version.")
     env_dir = (
-        args.prefix.expanduser().absolute()
+        prefix_dir.expanduser().absolute()
         / config["tool"]["name"]
         / version.lower().strip("v")
     )
-    if not env_dir.parent.exists() or args.force is True:
+    if force is True or check_for_environment_creation(
+        input_dir, config["tool"]["run"]["dependencies"]
+    ):
         with TemporaryDirectory() as temp_dir:
             tar_path = Path(temp_dir) / "micromamba.tar.bz2"
             download_with_progress(mamba_url, tar_path)
             extract_micromamba(tar_path, temp_dir)
             micromamba_path = Path(temp_dir) / "bin" / "micromamba"
             if not micromamba_path.is_file:
-                raise SystemExit(
+                raise ValueError(
                     "Micromamba binary was not found after extraction."
                 )
-            create_environment(Path(temp_dir), args.input_dir, env_dir, config)
+            create_environment(Path(temp_dir), input_dir, env_dir, config)
             set_version(env_dir, version, new=True)
     else:
         set_version(env_dir, version, new=False)
     share_dir = env_dir / "share" / "tool" / config["tool"]["name"]
     share_dir.mkdir(exist_ok=True, parents=True)
-    build_env_file = input_dir / "build-environment.yml"
+    build_env_file = input_dir / "build-environment.lock"
     copy_all(input_dir, share_dir)
     try:
         build(
@@ -394,9 +556,13 @@ def main():
     except Exception as error:
         logger.error(error)
         shutil.rmtree(env_dir)
-        raise SystemExit("Failed to create environment.")
+        raise ValueError("Failed to create environment.")
     print("The tool was successfully deployed in:", share_dir)
 
 
 if __name__ == "__main__":
-    main()
+    app = parse_args()
+    try:
+        main(app.input_dir, app.prefix, force=app.force)
+    except ValueError as error:
+        raise SystemExit(error) from None
