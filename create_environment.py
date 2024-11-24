@@ -445,13 +445,15 @@ def parse_dependency(dependency: str):
     return package_name, version_constraint or ""
 
 
-def check_for_environment_creation(source_dir, dependencies):
+def check_for_environment_creation(source_dir, env_dir, dependencies):
     """Check the dependencies and decide about a (re)creation of the environment.
 
     Parameters
     ----------
     source_dir: Path
         The source-code directory
+    env_dir: Path
+        The conda env of all versions of the tool
     dependencies: List[str]
         defined dependencies of the tool
 
@@ -461,8 +463,9 @@ def check_for_environment_creation(source_dir, dependencies):
     """
 
     env_file = source_dir / "environment.lock"
-    if not env_file.is_file():
-        return True
+    for file in (env_file, source_dir, source_dir / ".versions.json"):
+        if not file.exists():
+            return True
     deps_lock = {}
 
     try:
@@ -528,7 +531,7 @@ def main(input_dir, prefix_dir, force=False):
         / version.lower().strip("v")
     )
     if force is True or check_for_environment_creation(
-        input_dir, config["tool"]["run"]["dependencies"]
+        input_dir, env_dir.parent, config["tool"]["run"]["dependencies"]
     ):
         with TemporaryDirectory() as temp_dir:
             tar_path = Path(temp_dir) / "micromamba.tar.bz2"
