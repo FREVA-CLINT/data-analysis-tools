@@ -48,10 +48,10 @@ try:
     import tomllib as toml
 except ImportError:
     try:
-        import toml
+        import tomli as toml
     except ImportError:
-        pip_install("toml")
-        import toml
+        pip_install("tomli")
+        import tomli as toml
 
 
 try:
@@ -278,6 +278,7 @@ def set_version(conda_dir, version, new=True):
     if version_file.is_file():
         content = json.loads(version_file.read_text())
     else:
+        version_file.parent.mkdir(exist_ok=True, parents=True)
         new = True
         content = {"latest": str(conda_dir.absolute())}
     if new:

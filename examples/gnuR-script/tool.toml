@@ -75,8 +75,7 @@ help = "A help message for parameter-5, which is a datetime parameter."
 # Parameter 6: Example of a databrowser parameter for search functionality.
 title = "Parameter for Variable"
 type = "databrowser"  # Special parameter type for databrowser integration.
-help = """
-Allows integration with a databrowser search. Specify a `search_key` and
+help = """Allows integration with a databrowser search. Specify a `search_key` and
 optional constraints for filtering search results.
 """
 search_key = "variable"  # Key used in the databrowser search.
