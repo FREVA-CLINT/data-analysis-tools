@@ -204,7 +204,7 @@ def create_environment(mamba_dir, tool_dir, env_dir, tool_config):
 
     requ_file = tool_dir.expanduser().absolute() / "requirements.txt"
     pip_cmd = []
-    env_file = tool_dir / "environment.lock"
+    env_file = tool_dir / "environment-lock.yml"
     if env_dir.is_dir():
         shutil.rmtree(env_dir)
     if requ_file.is_file():
@@ -217,7 +217,11 @@ def create_environment(mamba_dir, tool_dir, env_dir, tool_config):
         "Creating environment for %s",
         tool_config["tool"]["run"].get("dependencies", []),
     )
-    deps = tool_config["tool"]["run"].get("dependencies", []) + ["jq", "mamba"]
+    deps = tool_config["tool"]["run"].get("dependencies", []) + [
+        "jq",
+        "mamba",
+        "websockets",
+    ]
     if not env_file.is_file():
         env = os.environ.copy()
         subprocess.check_call(
@@ -531,7 +535,7 @@ def main(input_dir, prefix_dir, force=False):
         / version.lower().strip("v")
     )
     if force is True or check_for_environment_creation(
-        input_dir, env_dir.parent, config["tool"]["run"]["dependencies"]
+        input_dir, env_dir.parent, config["tool"]["run"].get("dependencies", [])
     ):
         with TemporaryDirectory() as temp_dir:
             tar_path = Path(temp_dir) / "micromamba.tar.bz2"
@@ -548,7 +552,7 @@ def main(input_dir, prefix_dir, force=False):
         set_version(env_dir, version, new=False)
     share_dir = env_dir / "share" / "tool" / config["tool"]["name"]
     share_dir.mkdir(exist_ok=True, parents=True)
-    build_env_file = input_dir / "build-environment.lock"
+    build_env_file = input_dir / "build-environment-lock.yml"
     copy_all(input_dir, share_dir)
     try:
         build(
