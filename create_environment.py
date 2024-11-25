@@ -204,7 +204,7 @@ def create_environment(mamba_dir, tool_dir, env_dir, tool_config):
 
     requ_file = tool_dir.expanduser().absolute() / "requirements.txt"
     pip_cmd = []
-    env_file = tool_dir / "environment-lock.yml"
+    env_file = tool_dir / "environment.yml"
     if env_dir.is_dir():
         shutil.rmtree(env_dir)
     if requ_file.is_file():
@@ -552,7 +552,7 @@ def main(input_dir, prefix_dir, force=False):
         set_version(env_dir, version, new=False)
     share_dir = env_dir / "share" / "tool" / config["tool"]["name"]
     share_dir.mkdir(exist_ok=True, parents=True)
-    build_env_file = input_dir / "build-environment-lock.yml"
+    build_env_file = input_dir / "build-environment.yml"
     copy_all(input_dir, share_dir)
     try:
         build(
