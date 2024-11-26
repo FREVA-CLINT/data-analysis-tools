@@ -418,10 +418,13 @@ def load_config(input_dir):
     ValueError
         f no valid configuration file is found in the directory.
     """
+    if input_dir.is_dir():
+        for file in ("tool.toml", "pyproject.toml"):
+            if (input_dir / file).is_file():
+                return toml.loads((input_dir / file).read_text())
+    elif input_dir.is_file():
+        return toml.loads((input_dir).read_text())
 
-    for file in ("tool.toml", "pyproject.toml"):
-        if (input_dir / file).is_file():
-            return toml.loads((input_dir / file).read_text())
     raise ValueError(
         "Your tool must be defined in either a tool.toml or pyproject.toml file"
     )
@@ -531,6 +534,9 @@ def main(input_dir, prefix_dir, force=False):
     mamba_url = get_download_url()
     input_dir = input_dir.expanduser().absolute()
     config = load_config(input_dir)
+    if input_dir.is_file():
+        # We probaply got the path to the tool definition.
+        input_dir = input_dir.parent
     version = config["tool"].get(
         "version", config.get("project", {}).get("version")
     )
