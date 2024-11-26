@@ -466,8 +466,8 @@ def check_for_environment_creation(source_dir, env_dir, dependencies):
     bool: whether or not a complete new environment needs to be created.
     """
 
-    env_file = source_dir / "environment.lock"
-    for file in (env_file, source_dir, source_dir / ".versions.json"):
+    env_file = source_dir / "environment.yml"
+    for file in (env_file, env_dir, env_dir / ".versions.json"):
         if not file.exists():
             return True
     deps_lock = {}
@@ -475,14 +475,21 @@ def check_for_environment_creation(source_dir, env_dir, dependencies):
     try:
         deps_lock = yaml.safe_load(env_file.read_text())
     except Exception:
-        logger.warning("Could not read environment.lock file")
+        logger.warning("Could not read environment.yml file")
         env_file.unlink()
         return True
     dependency_specs = {}
     for dep in deps_lock["dependencies"]:
         dep_vers = dep.split("=")
         dependency_specs[dep_vers[0]] = dep_vers[1:]
-    recreate = False
+    try:
+        versions = json.loads((env_dir / ".versions.json").read_text())
+        if not (Path(versions["latest"]) / "bin").exists():
+            recreate = True
+        else:
+            recreate = False
+    except Exception:
+        recreate = True
     for p in dependencies:
         package_name, constraint = parse_dependency(p)
         if package_name not in dependency_specs:
