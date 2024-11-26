@@ -1,0 +1,42 @@
+# This is a template configuration file for your data analysis tool.
+# Use this file as a starting point by copying and editing it to fit your
+# requirements. The configuration file follows TOML syntax. For more details,
+# visit: https://toml.io.
+#
+# IMPORTANT: Remove all comments (lines starting with '#') before using this
+# configuration.
+
+[tool]
+# General information about your tool.
+authors = [
+    "Author 1 <author1@email.com>",
+    "Author 2 <author2@email.com>"
+]  # List of authors and their contact information.
+version = "v0.0.1"  # Semantic version of the tool.
+summary = "A brief description of what this tool does."  # Short overview.
+title = "A catchy title for the tool (optional)"  # Optional title for flair.
+description = """
+A detailed description of the tool's purpose and functionality. This section
+supports multi-line text for extensive details.
+"""  # Extended multi-line description.
+
+[tool.run]
+# The specified command will receive a single JSON input containing all input
+# parameters. Ensure your script processes this JSON file. Refer to the
+# example script for guidance.
+dependencies = ["python=3.13", "ffmpeg"]  # Conda-forge packages needed.
+
+[tool.build]
+# Configuration for building the tool.
+dependencies = ["python=3.13", "mamba"]  # Optional build-specific deps.
+# NOTE: If a 'build.sh' script is provided, it will be executed during build.
+
+[tool.input_parameters.parameter]
+# Parameter 1: Example of a string parameter with a default value.
+# NOTE: Setting a default value and marking a parameter as mandatory are
+# typically mutually exclusive. If a parameter has a default value, users
+# are not required to provide it explicitly.
+type = "string"  # Data type of the parameter.
+mandatory = false  # Indicates whether this parameter is required.
+default = "default_value"  # Default value for the parameter.
+help = "A help message for parameter-1, which is a string parameter."
