@@ -533,15 +533,20 @@ def main(input_dir, prefix_dir, force=False):
 
     mamba_url = get_download_url()
     input_dir = input_dir.expanduser().absolute()
-    config = load_config(input_dir)
+    try:
+        config = load_config(input_dir)
+    except toml.TOMLDecodeError as error:
+        raise ValueError(f"Invalid toml file: {error}")
     if input_dir.is_file():
         # We probaply got the path to the tool definition.
         input_dir = input_dir.parent
     version = config["tool"].get(
         "version", config.get("project", {}).get("version")
     )
-    if not version:
-        raise ValueError("You need to define a version.")
+    try:
+        version = str(Version(version))
+    except Exception:
+        raise ValueError("You need to define a valid version.") from None
     env_dir = (
         prefix_dir.expanduser().absolute()
         / config["tool"]["name"]
