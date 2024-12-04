@@ -62,7 +62,6 @@ help = "A help message for parameter-3, which is a float."
 
 [tool.input_parameters.parameter_4]
 # Parameter 4: Example of a boolean parameter with a default value.
-title = "Parameter 4"
 type = "bool"  # Data type: boolean.
 default = true  # Default value is true.
 help = "A help message for parameter-4, which is a boolean flag."
