@@ -15,7 +15,6 @@ authors = [
 ]  # List of authors and their contact information.
 version = "v0.0.2"  # Semantic version of the tool.
 summary = "A brief description of what this tool does."  # Short overview.
-title = "A catchy title for the tool (optional)"  # Optional title for flair.
 description = """
 A detailed description of the tool's purpose and functionality. This section
 supports multi-line text for extensive details.
@@ -146,3 +145,12 @@ help = """
 Accepts a list of values where each item matches the specified data type.
 """
 default = [10, 1, -1]  # Default list of integers.
+
+[tool.input_parameters.parameter_9]
+# Parameter 9: Example of a path parameter.
+title = "Parameter 9"
+type = "path"  # Data type of the parameter.
+mandatory = true  # Indicates whether this parameter is required.
+help = "A help message for parameter-9, which is a path parameter."
+
+
